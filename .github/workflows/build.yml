@@ -3,7 +3,7 @@ name: Build Mael AI APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:   # bisa trigger manual dari GitHub
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout kode
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -25,7 +25,7 @@ jobs:
             git zip unzip openjdk-17-jdk \
             autoconf libtool pkg-config \
             zlib1g-dev libncurses5-dev \
-            libncursesw5-dev libtinfo5 \
+            libncursesw5-dev \
             cmake libffi-dev libssl-dev \
             build-essential
 
@@ -34,8 +34,8 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython
 
-      - name: Cache .buildozer (biar build berikutnya cepat)
-        uses: actions/cache@v3
+      - name: Cache .buildozer
+        uses: actions/cache@v4
         with:
           path: .buildozer
           key: buildozer-${{ hashFiles('buildozer.spec') }}
@@ -45,8 +45,8 @@ jobs:
         run: |
           buildozer android debug 2>&1 | tee build.log
 
-      - name: Upload APK ke Artifacts
-        uses: actions/upload-artifact@v3
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: MaelAI-APK
           path: bin/*.apk
@@ -54,7 +54,7 @@ jobs:
 
       - name: Upload log jika gagal
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
