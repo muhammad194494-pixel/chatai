@@ -25,17 +25,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk \
+            git zip unzip \
+            openjdk-17-jdk \
             autoconf libtool pkg-config \
             zlib1g-dev libncurses5-dev \
             libncursesw5-dev \
             cmake libffi-dev libssl-dev \
-            build-essential
+            build-essential \
+            python3-pip
 
       - name: Install Buildozer & Cython
         run: |
-          pip install --upgrade pip
-          pip install buildozer cython
+          pip install --upgrade pip setuptools wheel
+          pip install buildozer cython virtualenv
 
       - name: Cache .buildozer
         uses: actions/cache@v4
@@ -44,9 +46,23 @@ jobs:
           key: buildozer-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-
 
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p $HOME/.buildozer/android/platform
+          yes | buildozer android debug --version || true
+
       - name: Build APK
         run: |
-          buildozer android debug 2>&1 | tee build.log
+          set -o pipefail
+          buildozer -v android debug 2>&1 | tee build.log
+          echo "BUILD_EXIT=$?" >> $GITHUB_ENV
+
+      - name: Cek hasil build
+        run: |
+          echo "=== Isi folder bin/ ==="
+          ls -la bin/ || echo "Folder bin/ tidak ada!"
+          echo "=== 50 baris terakhir log ==="
+          tail -50 build.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -54,10 +70,12 @@ jobs:
           name: MaelAI-APK
           path: bin/*.apk
           retention-days: 7
+          if-no-files-found: warn
 
-      - name: Upload log jika gagal
-        if: failure()
+      - name: Upload build log (selalu)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log
           path: build.log
+          retention-days: 3
